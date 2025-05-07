@@ -10,9 +10,11 @@ namespace ProductConstructionMCP;
 
 public class ApplicationInsightsHandler(
     IOptions<AppConfiguration> options,
-     ILogger<ApplicationInsightsHandler> logger)
+    ProcessRunner processRunner,
+    ILogger<ApplicationInsightsHandler> logger)
 {
     private readonly IOptions<AppConfiguration> _options = options;
+    private readonly ProcessRunner _processRunner = processRunner;
     private readonly ILogger<ApplicationInsightsHandler> _logger = logger;
 
     /// <summary>
@@ -40,7 +42,7 @@ public class ApplicationInsightsHandler(
 
             // Execute the command using the Helpers class
             _logger.LogInformation("Executing Azure CLI command");
-            var result = await Helpers.ExecuteCommandAsync(azCliCommand, _logger);
+            var result = await _processRunner.ExecuteCommandAsync(azCliCommand);
             _logger.LogInformation("Command executed, received {ResultLength} bytes", result.Length);
 
             // Parse and validate the JSON result
@@ -126,13 +128,13 @@ public class ApplicationInsightsHandler(
         {
             // Check if the user is already logged in
             _logger.LogInformation("Checking Azure CLI login status with 'az account show'");
-            string accountOutput = await Helpers.ExecuteCommandAsync("az account show", _logger);
+            string accountOutput = await _processRunner.ExecuteCommandAsync("az account show");
             
             // If we reach here, the user is logged in
             // Parse the JSON to get the current account info
             using var doc = JsonDocument.Parse(accountOutput);
             var name = doc.RootElement.GetProperty("name").GetString();
-            
+
             _logger.LogInformation("Using Azure account: {AccountName}", name);
         }
         catch (Exception ex)

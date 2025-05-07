@@ -17,6 +17,7 @@ builder.Configuration
 
 builder.Services.Configure<AppConfiguration>(builder.Configuration);
 builder.Services.AddTransient<ApplicationInsightsHandler>();
+builder.Services.AddTransient<ProcessRunner>();
 
 builder.Services
     .AddMcpServer()

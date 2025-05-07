@@ -9,17 +9,19 @@ namespace ProductConstructionMCP;
 /// <summary>
 /// Helper methods for common functionality used across the application
 /// </summary>
-public static class Helpers
+public class ProcessRunner(ILogger<ProcessRunner> logger)
 {
+    private readonly ILogger<ProcessRunner> _logger = logger;
+
     /// <summary>
     /// Executes a command line process and returns the output
     /// </summary>
     /// <param name="command">The command to execute</param>
-    /// <param name="logger">Optional logger to log details of command execution</param>
+    /// <param name="_logger">Optional logger to log details of command execution</param>
     /// <returns>The command output as a string</returns>
-    public static async Task<string> ExecuteCommandAsync(string command, ILogger? logger = null)
+    public async Task<string> ExecuteCommandAsync(string command)
     {
-        logger?.LogDebug("Executing command: {Command}", command);
+        _logger.LogDebug("Executing command: {Command}", command);
         
         var processStartInfo = new ProcessStartInfo
         {
@@ -31,7 +33,7 @@ public static class Helpers
             CreateNoWindow = true
         };
 
-        logger?.LogTrace("Process start info configured with UseShellExecute={UseShellExecute}, CreateNoWindow={CreateNoWindow}", 
+        _logger.LogTrace("Process start info configured with UseShellExecute={UseShellExecute}, CreateNoWindow={CreateNoWindow}", 
             processStartInfo.UseShellExecute, processStartInfo.CreateNoWindow);
 
         var process = new Process { StartInfo = processStartInfo };
@@ -42,7 +44,7 @@ public static class Helpers
         {
             if (args.Data != null)
             {
-                logger?.LogTrace("Process output: {Output}", args.Data);
+                _logger.LogTrace("Process output: {Output}", args.Data);
                 output.AppendLine(args.Data);
             }
         };
@@ -50,38 +52,38 @@ public static class Helpers
         {
             if (args.Data != null)
             {
-                logger?.LogTrace("Process error: {Error}", args.Data);
+                _logger.LogTrace("Process error: {Error}", args.Data);
                 error.AppendLine(args.Data);
             }
         };
 
         try
         {
-            logger?.LogDebug("Starting process");
+            _logger.LogDebug("Starting process");
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             
-            logger?.LogDebug("Waiting for process to exit");
+            _logger.LogDebug("Waiting for process to exit");
             await process.WaitForExitAsync();
 
-            logger?.LogDebug("Process exited with code {ExitCode}", process.ExitCode);
+            _logger.LogDebug("Process exited with code {ExitCode}", process.ExitCode);
 
             if (process.ExitCode != 0)
             {
                 var errorMsg = $"Command failed with exit code {process.ExitCode}: {error}";
-                logger?.LogError(errorMsg);
+                _logger.LogError(errorMsg);
                 throw new InvalidOperationException(errorMsg);
             }
 
             var result = output.ToString().Trim();
-            logger?.LogDebug("Command completed successfully, output length: {OutputLength} characters", result.Length);
+            _logger.LogDebug("Command completed successfully, output length: {OutputLength} characters", result.Length);
             return result;
         }
-        catch (Exception ex) when (!(ex is InvalidOperationException))
+        catch (Exception ex) when (ex is not InvalidOperationException)
         {
             var errorMsg = $"Exception executing command: {ex.Message}";
-            logger?.LogError(ex, errorMsg);
+            _logger.LogError(ex, errorMsg);
             throw new InvalidOperationException(errorMsg, ex);
         }
     }
