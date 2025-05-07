@@ -22,4 +22,19 @@ public class ApplicationInsightsConfig
     /// The instrumentation key for Application Insights
     /// </summary>
     public string InstrumentationKey { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The subscription ID containing the Application Insights resource
+    /// </summary>
+    public string SubscriptionId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The resource group containing the Application Insights resource
+    /// </summary>
+    public string ResourceGroup { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The name of the Application Insights resource
+    /// </summary>
+    public string ApplicationName { get; set; } = string.Empty;
 }

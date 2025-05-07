@@ -1,13 +1,13 @@
 {
     "inputs": [],
     "servers": {
-        "MyFirstMCP": {
+        "ProductConstruction MCP": {
             "type": "stdio",
             "command": "dotnet",
             "args": [
                 "run",
                 "--project",
-                "ProductConstructionMCP\\ProductConstructionMCP.csproj"
+                "D:\\repos\\agent\\ProductConstructionMCP\\ProductConstructionMCP.csproj"
             ]
         }
     }

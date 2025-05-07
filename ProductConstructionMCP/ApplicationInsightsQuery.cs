@@ -12,15 +12,10 @@ namespace ProductConstructionMCP;
 /// MCP tool for executing Application Insights queries using local Azure CLI credentials
 /// </summary>
 [McpServerToolType]
-public class ApplicationInsightsQuery
+public class ApplicationInsightsQuery(IOptions<AppConfiguration> options)
 {
     private static readonly Regex TimespanRegex = new(@"^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private readonly AppConfiguration _config;
-
-    public ApplicationInsightsQuery(IOptions<AppConfiguration> options)
-    {
-        _config = options.Value;
-    }
+    private readonly AppConfiguration _config = options.Value;
 
     /// <summary>
     /// Executes a Kusto KQL query against an Application Insights instance
@@ -31,11 +26,10 @@ public class ApplicationInsightsQuery
     [McpServerTool, Description("Executes a Kusto KQL query against the configured Application Insights instance")]
     public async Task<string> ExecuteQuery(string query, string timespan = "P1D")
     {
-        string appId = _config.ApplicationInsights.InstrumentationKey;
-        
-        if (string.IsNullOrEmpty(appId))
+        // Check for required configuration values
+        if (string.IsNullOrEmpty(_config.ApplicationInsights.ApplicationName))
         {
-            throw new InvalidOperationException("Application Insights instrumentation key not configured. Please check your configuration.");
+            throw new InvalidOperationException("Application Insights application name not configured. Please check your configuration.");
         }
 
         if (string.IsNullOrEmpty(query))
@@ -56,7 +50,7 @@ public class ApplicationInsightsQuery
 
             // Prepare the Azure CLI command to execute the query
             string escapedQuery = query.Replace("\"", "\\\"");
-            string azCliCommand = $"az monitor app-insights query --app {appId} --analytics-query \"{escapedQuery}\" --timespan {timespan}";
+            string azCliCommand = BuildAzQueryCommand(escapedQuery, timespan);
 
             // Execute the command using the Helpers class
             var result = await Helpers.ExecuteCommandAsync(azCliCommand);
@@ -78,57 +72,32 @@ public class ApplicationInsightsQuery
     }
 
     /// <summary>
-    /// Executes a Kusto KQL query against a specific Application Insights instance
+    /// Builds the Azure CLI command for querying Application Insights based on available configuration
     /// </summary>
-    /// <param name="appId">The Application Insights application ID (overrides configuration)</param>
-    /// <param name="query">The Kusto KQL query to execute</param>
-    /// <param name="timespan">Optional timespan for the query (e.g. "P1D" for last 24 hours). Default is P1D.</param>
-    /// <returns>The query results as a JSON string</returns>
-    [McpServerTool, Description("Executes a Kusto KQL query against a specified Application Insights instance")]
-    public static async Task<string> ExecuteQueryWithAppId(string appId, string query, string timespan = "P1D")
+    /// <param name="escapedQuery">The escaped query string</param>
+    /// <param name="timespan">The timespan for the query</param>
+    /// <returns>The complete Azure CLI command</returns>
+    private string BuildAzQueryCommand(string escapedQuery, string timespan)
     {
-        if (string.IsNullOrEmpty(appId))
+        var appInsights = _config.ApplicationInsights;
+        string baseCommand = $"az monitor app-insights query --app {appInsights.ApplicationName}";
+        
+        // Add resource group if available
+        if (!string.IsNullOrEmpty(appInsights.ResourceGroup))
         {
-            throw new ArgumentException("Application Insights ID cannot be empty", nameof(appId));
+            baseCommand += $" --resource-group {appInsights.ResourceGroup}";
         }
-
-        if (string.IsNullOrEmpty(query))
+        
+        // Add subscription if available
+        if (!string.IsNullOrEmpty(appInsights.SubscriptionId))
         {
-            throw new ArgumentException("Query cannot be empty", nameof(query));
+            baseCommand += $" --subscription {appInsights.SubscriptionId}";
         }
-
-        // Validate the timespan format
-        if (!IsValidTimespan(timespan))
-        {
-            throw new ArgumentException("Invalid timespan format. Use ISO 8601 duration format (e.g., 'P1D', 'PT12H')", nameof(timespan));
-        }
-
-        try
-        {
-            // Ensure the user is logged in to Azure CLI
-            await EnsureAzureCliLogin();
-
-            // Prepare the Azure CLI command to execute the query
-            string escapedQuery = query.Replace("\"", "\\\"");
-            string azCliCommand = $"az monitor app-insights query --app {appId} --analytics-query \"{escapedQuery}\" --timespan {timespan}";
-
-            // Execute the command using the Helpers class
-            var result = await Helpers.ExecuteCommandAsync(azCliCommand);
-
-            // Parse and validate the JSON result
-            ValidateJsonResult(result);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            return JsonSerializer.Serialize(new
-            {
-                error = true,
-                message = ex.Message,
-                details = ex.ToString()
-            });
-        }
+        
+        // Add query and timespan
+        baseCommand += $" --analytics-query \"{escapedQuery}\" --timespan {timespan}";
+        
+        return baseCommand;
     }
 
     /// <summary>

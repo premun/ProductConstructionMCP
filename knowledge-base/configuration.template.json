@@ -1,5 +1,8 @@
 {
     "applicationInsights": {
-        "instrumentationKey": "########-####-####-############"
+        "instrumentationKey": "########-####-####-############",
+        "subscriptionId": "########-####-####-############",
+        "resourceGroup": "your-resource-group",
+        "applicationName": "your-app-insights-name"
     }
 }
