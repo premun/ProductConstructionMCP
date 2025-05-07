@@ -5,13 +5,9 @@ using Microsoft.Extensions.Logging;
 using ProductConstructionMCP;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Logging.AddConsole(consoleLogOptions =>
-{
-    consoleLogOptions.LogToStandardErrorThreshold = LogLevel.Debug; // Changed from Trace to Debug
-});
-
-// Add Debug provider for more detailed logs
-builder.Logging.AddDebug();
+builder.Logging
+    .AddConsole()
+    .AddDebug();
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -19,13 +15,8 @@ builder.Configuration
     .AddEnvironmentVariables()
     .AddCommandLine(args);
 
-// Bind the root configuration section to AppConfiguration
-builder.Services.Configure<AppConfiguration>(c =>
-{
-    c.ApplicationInsights.SubscriptionId = "e6b5f9f5-0ca4-4351-879b-014d78400ec2";
-    c.ApplicationInsights.ResourceGroup = "product-construction-service";
-    c.ApplicationInsights.ApplicationName = "product-construction-service-ai-int";
-});
+builder.Services.Configure<AppConfiguration>(builder.Configuration);
+builder.Services.AddTransient<ApplicationInsightsHandler>();
 
 builder.Services
     .AddMcpServer()
