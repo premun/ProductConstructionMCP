@@ -31,27 +31,13 @@ This repository contains a Model Context Protocol (MCP) implementation for produ
    az login
    ```
 
-3. **Configure the application**
-
-   Copy the configuration template and update it with your Azure resource details:
-
-   ```bash
-   cp knowledge-base/configuration.template.json knowledge-base/configuration.json
-   ```
-
-   Edit the `knowledge-base/configuration.json` file and update the following values:
-   - `applicationInsights.instrumentationKey`: Your Application Insights instrumentation key
-   - `applicationInsights.subscriptionId`: Your Azure subscription ID
-   - `applicationInsights.resourceGroup`: The resource group containing your Application Insights resource
-   - `applicationInsights.applicationName`: The name of your Application Insights resource
-
-4. **Build the project**
+3. **Build the project**
 
    ```bash
    dotnet build
    ```
 
-5. **Run the MCP server**
+4. **Run the MCP server**
 
    ```bash
    dotnet run --project ProductConstructionMCP/ProductConstructionMCP.csproj

@@ -19,11 +19,6 @@ public class AppConfiguration
 public class ApplicationInsightsConfig
 {
     /// <summary>
-    /// The instrumentation key for Application Insights
-    /// </summary>
-    public string InstrumentationKey { get; set; } = string.Empty;
-    
-    /// <summary>
     /// The subscription ID containing the Application Insights resource
     /// </summary>
     public string SubscriptionId { get; set; } = string.Empty;
