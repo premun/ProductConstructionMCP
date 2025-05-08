@@ -1,53 +1,46 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ModelContextProtocol.Server;
 using System;
-using System.ComponentModel;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Core;
+using Azure.Identity;
+using Azure.Monitor.Query;
+using Azure.Monitor.Query.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ProductConstructionMCP;
 
 public class ApplicationInsightsHandler(
     IOptions<AppConfiguration> options,
-    ProcessRunner processRunner,
     ILogger<ApplicationInsightsHandler> logger)
 {
     private readonly IOptions<AppConfiguration> _options = options;
-    private readonly ProcessRunner _processRunner = processRunner;
     private readonly ILogger<ApplicationInsightsHandler> _logger = logger;
+    private readonly LogsQueryClient _logsQueryClient = new(new DefaultAzureCredential());
 
     /// <summary>
     /// Executes a Kusto KQL query against an Application Insights instance
     /// </summary>
     /// <param name="query">The Kusto KQL query to execute</param>
     /// <returns>The query results as a JSON string</returns>
-    [McpServerTool, Description("Executes a Kusto KQL query against the configured Application Insights instance")]
     public async Task<string> ExecuteQuery(string query)
     {
         try
         {
             ValidateQueryParameters(query);
-            _logger.LogInformation("Query parameters validated successfully");
 
-            // Ensure the user is logged in to Azure CLI
-            _logger.LogInformation("Checking Azure CLI login status");
-            await EnsureAzureCliLogin();
-            _logger.LogInformation("Azure CLI login confirmed");
-
-            // Prepare the Azure CLI command to execute the query
-            string escapedQuery = query!.Replace("\"", "\\\"");
-            string azCliCommand = BuildAzQueryCommand(escapedQuery);
-            _logger.LogInformation("Built Azure CLI command: {Command}", azCliCommand);
-
-            // Execute the command using the Helpers class
-            _logger.LogInformation("Executing Azure CLI command");
-            var result = await _processRunner.ExecuteCommandAsync(azCliCommand);
-            _logger.LogInformation("Command executed, received {ResultLength} bytes", result.Length);
-
-            // Parse and validate the JSON result
-            ValidateJsonResult(result);
-            _logger.LogInformation("JSON result validated successfully");
+            // Execute the query using Azure Monitor Query SDK
+            Response<LogsQueryResult> response = await _logsQueryClient.QueryResourceAsync(
+                BuildAppInsightsResourceId(),
+                query,
+                new QueryTimeRange(TimeSpan.FromDays(30)));
+            
+            // Convert the result to JSON
+            var result = ConvertQueryResultToJson(response.Value);
+            _logger.LogInformation("Results converted to JSON, received {ResultLength} bytes", result.Length);
 
             return result;
         }
@@ -90,73 +83,74 @@ public class ApplicationInsightsHandler(
         }
     }
 
-    /// <summary>
-    /// Builds the Azure CLI command for querying Application Insights based on available configuration
-    /// </summary>
-    /// <param name="escapedQuery">The escaped query string</param>
-    /// <returns>The complete Azure CLI command</returns>
-    private string BuildAzQueryCommand(string escapedQuery)
+    private ResourceIdentifier BuildAppInsightsResourceId()
     {
         var appInsights = _options.Value.ApplicationInsights;
-
-        string baseCommand = $"az monitor app-insights query --app {appInsights.ApplicationName}";
-
-        // Add resource group if available
-        if (!string.IsNullOrEmpty(appInsights.ResourceGroup))
-        {
-            baseCommand += $" --resource-group {appInsights.ResourceGroup}";
-        }
-        
-        // Add subscription if available
-        if (!string.IsNullOrEmpty(appInsights.SubscriptionId))
-        {
-            baseCommand += $" --subscription {appInsights.SubscriptionId}";
-        }
-        
-        // Add query and timespan
-        baseCommand += $" --analytics-query \"{escapedQuery}\"";
-        
-        return baseCommand;
+        return new ResourceIdentifier($"/subscriptions/{appInsights.SubscriptionId}/resourceGroups/{appInsights.ResourceGroup}/providers/Microsoft.Insights/components/{appInsights.ApplicationName}");
     }
-
-    /// <summary>
-    /// Ensures the user is logged in to Azure CLI
-    /// </summary>
-    private async Task EnsureAzureCliLogin()
+    private string ConvertQueryResultToJson(LogsQueryResult queryResult)
     {
         try
         {
-            // Check if the user is already logged in
-            _logger.LogInformation("Checking Azure CLI login status with 'az account show'");
-            string accountOutput = await _processRunner.ExecuteCommandAsync("az account show");
-            
-            // If we reach here, the user is logged in
-            // Parse the JSON to get the current account info
-            using var doc = JsonDocument.Parse(accountOutput);
-            var name = doc.RootElement.GetProperty("name").GetString();
+            // Extract the table data and convert to JSON
+            var resultData = queryResult.Table.Rows.Select(row => {
+                var rowDict = new Dictionary<string, object?>();
+                for (int i = 0; i < queryResult.Table.Columns.Count; i++)
+                {
+                    var column = queryResult.Table.Columns[i];
 
-            _logger.LogInformation("Using Azure account: {AccountName}", name);
+                    // Get the value based on column type
+                    object? value;
+                    if (column.Type == LogsColumnType.String)
+                    {
+                        value = row.GetString(i);
+                    }
+                    else if (column.Type == LogsColumnType.Int)
+                    {
+                        value = row.GetInt32(i);
+                    }
+                    else if (column.Type == LogsColumnType.Long)
+                    {
+                        value = row.GetInt64(i);
+                    }
+                    else if (column.Type == LogsColumnType.Real)
+                    {
+                        value = row.GetDouble(i);
+                    }
+                    else if (column.Type == LogsColumnType.Datetime)
+                    {
+                        value = row.GetDateTimeOffset(i);
+                    }
+                    else if (column.Type == LogsColumnType.Bool)
+                    {
+                        value = row.GetBoolean(i);
+                    }
+                    else if (column.Type == LogsColumnType.Dynamic)
+                    {
+                        try {
+                            value = JsonSerializer.Deserialize<object>(row.GetString(i));
+                        }
+                        catch
+                        {
+                            value = row.GetString(i); // Fallback to string if JSON parsing fails
+                            _logger.LogError("Failed to parse JSON for column {ColumnName}: {value}", column.Name, value);
+                        }
+                    }
+                    else
+                    {
+                        value = row.GetString(i); // Fallback to string for unknown types
+                    }
+                    rowDict[column.Name] = value;
+                }
+                return rowDict;
+            }).ToList();
+
+            return JsonSerializer.Serialize(resultData, new JsonSerializerOptions { WriteIndented = true });
         }
         catch (Exception ex)
         {
-            // If az account show fails, the user is not logged in
-            _logger.LogError(ex, "Azure CLI login check failed");
-            throw new InvalidOperationException("Not logged in to Azure CLI. Please run 'az login' before using this tool.");
-        }
-    }
-
-    private void ValidateJsonResult(string result)
-    {
-        try
-        {
-            _logger.LogInformation("Validating JSON result");
-            JsonDocument.Parse(result);
-            _logger.LogInformation("JSON result is valid");
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Invalid JSON result received");
-            throw new InvalidOperationException("The query did not return valid JSON data");
+            _logger.LogError(ex, "Error converting query result to JSON");
+            throw new InvalidOperationException("Failed to convert query result to JSON", ex);
         }
     }
 }
