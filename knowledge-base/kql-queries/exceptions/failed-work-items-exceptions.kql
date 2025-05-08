@@ -1,4 +1,3 @@
-// filepath: d:\repos\agent\knowledge-base\kql-queries\exceptions\failed-work-items-exceptions.kql
 // Title: Failed Work Items Exception Analysis
 // Description: Finds exceptions associated with failed work items and groups them by type
 // Use Case: Root cause analysis of failing background work items

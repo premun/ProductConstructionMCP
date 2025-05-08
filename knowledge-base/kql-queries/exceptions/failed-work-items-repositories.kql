@@ -1,0 +1,51 @@
+// Title: Failed Work Items Repository Impact Analysis
+// Description: Identifies GitHub repositories affected by failed work items through trace analysis
+// Use Case: Impact assessment of service failures on specific repositories
+// Last Updated: 2025-05-08
+
+// Parameters:
+// - TimeRange: Time range for repository impact analysis, should match the failed work items query window
+
+// Query:
+// First, get all failed work items
+let failedWorkItems = customEvents
+| where name == "WorkItemExecuted"
+| extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
+| where success != true and attempt == 3
+| project timestamp, operation = operation_Name, operation_Id = operation_Id;
+
+// Then get all traces associated with these failed operations
+// Extract repository information from the trace messages with specific owners
+let repoTraces = traces
+| join kind=inner (
+    failedWorkItems
+) on operation_Id
+| extend repositoryInfo = extract(@"(microsoft|dotnet|xamarin|mono)/([a-zA-Z0-9-_\.]+)", 0, message)
+| where isnotempty(repositoryInfo)
+| project timestamp, operation_Id, operation, repositoryInfo, message;
+
+// Summarize by repository to see impact
+repoTraces
+| summarize 
+    FailureCount = dcount(operation_Id),
+    LastFailure = max(timestamp),
+    FailedOperations = make_set(operation, 100),
+    SampleMessages = take_any(message, 3)
+    by Repository = repositoryInfo
+| order by FailureCount desc
+
+// Expected Output:
+// - Repository: The GitHub repository identified in the trace (format: owner/repo)
+// - FailureCount: Number of distinct operations failing that impact this repository
+// - LastFailure: Timestamp of the most recent failure affecting this repository
+// - FailedOperations: Set of operation names that are failing for this repository
+// - SampleMessages: Sample trace messages to provide context about the failures
+//
+// Interpretation:
+// This query helps identify which repositories are most affected by service failures.
+// The distinct count of operation IDs shows how many separate incidents are affecting a repository.
+// You can use this information to prioritize fixes based on repository impact and collaborate
+// with repository owners to address issues affecting their workflows.
+// 
+// Note: This query now specifically targets repositories owned by microsoft, dotnet, xamarin, or mono
+// which provides more focused results for your monitoring needs.
