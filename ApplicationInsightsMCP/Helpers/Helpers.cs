@@ -1,0 +1,27 @@
+using System;
+using System.IO;
+
+namespace ApplicationInsightsMCP.Helpers;
+
+internal static class Helpers
+{
+    public static string FindRepositoryRoot()
+    {
+        // Start with the current directory
+        var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        
+        // Look for common repository indicators
+        while (currentDir != null && currentDir.Exists)
+        {
+            // Check for .git directory (Git)
+            if (Directory.Exists(Path.Combine(currentDir.FullName, ".git")))
+            {
+                return currentDir.FullName;
+            }
+
+            currentDir = currentDir.Parent;
+        }
+
+        throw new InvalidOperationException("No repository root found. Ensure you are in a git repository.");
+    }
+}

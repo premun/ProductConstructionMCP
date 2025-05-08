@@ -1,0 +1,25 @@
+// Title: Failed Background Work Items Detection
+// Description: Identifies background work items that have failed after all retry attempts
+// Use Case: Critical monitoring of background processing failures in the service
+// Last Updated: 2025-05-08
+
+// Parameters:
+// - Attempt: Set to 3 to capture only items that have exhausted all retry attempts
+// - TimeRange: Adjust as needed in your query window (default is last 24h)
+
+// Query:
+customEvents
+| where name == "WorkItemExecuted"
+| extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
+| where success != true and attempt == 3
+| project timestamp, operation = operation_Name, operationId = operation_Id
+
+// Expected Output:
+// - timestamp: When the work item execution was logged
+// - operation: Name of the operation that failed
+// - operationId: Unique identifier for correlation and tracking
+
+// Interpretation:
+// This query returns work items that have failed after the maximum number of retry attempts.
+// These represent critical failures that require immediate attention as they won't be automatically retried.
+// You can use the operationId to correlate with other telemetry for the same operation to investigate root causes.

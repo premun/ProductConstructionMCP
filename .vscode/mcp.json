@@ -13,8 +13,8 @@
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "APPLICATIONINSIGHTS__SUBSCRIPTIONID": "e6b5f9f5-0ca4-4351-879b-014d78400ec2",
                 "APPLICATIONINSIGHTS__RESOURCEGROUP": "product-construction-service",
-                "APPLICATIONINSIGHTS__APPLICATIONNAME": "product-construction-service-ai-int",
-            },
+                "APPLICATIONINSIGHTS__APPLICATIONNAME": "product-construction-service-ai-int"
+            }
         }
     }
 }

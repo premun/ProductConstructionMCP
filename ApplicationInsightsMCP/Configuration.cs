@@ -12,8 +12,8 @@ public class AppConfiguration
     /// </summary>
     [JsonPropertyName("applicationInsights")]
     public ApplicationInsightsConfig ApplicationInsights { get; set; } = new();
-    
-    // Add other configuration sections here as needed
+
+    public string RepositoryRoot { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -26,13 +26,13 @@ public class ApplicationInsightsConfig
     /// </summary>
     [JsonPropertyName("subscriptionId")]
     public string SubscriptionId { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// The resource group containing the Application Insights resource
     /// </summary>
     [JsonPropertyName("resourceGroup")]
     public string ResourceGroup { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// The name of the Application Insights resource
     /// </summary>
