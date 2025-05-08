@@ -4,11 +4,15 @@
 
 // Parameters:
 // - OperationId: The specific operation ID to investigate
+// - TimeStart: The start of the time range to analyze (e.g., ago(24h))
 
 // Query:
 let operationId = "{{OperationId}}";
+let timeStart = datetime({{TimeStart}});
+let timeEnd = now();
 union (
     traces
+    | where timestamp between (timeStart .. timeEnd)
     | where operation_Id == operationId
     | project
         timestamp,
@@ -21,6 +25,7 @@ union (
 ),
 (
     exceptions
+    | where timestamp between (timeStart .. timeEnd)
     | where operation_Id == operationId
     | project
         timestamp,
@@ -33,6 +38,7 @@ union (
 ),
 (
     customEvents
+    | where timestamp between (timeStart .. timeEnd)
     | where operation_Id == operationId
     | project
         timestamp,
@@ -45,6 +51,7 @@ union (
 ),
 (
     requests
+    | where timestamp between (timeStart .. timeEnd)
     | where operation_Id == operationId
     | project
         timestamp,
@@ -58,6 +65,7 @@ union (
 | order by timestamp asc
 
 // Expected Output:
+// Tabularized data showing all telemetry items associated with the specified operation ID:
 // - timestamp: When the telemetry was logged
 // - source: The telemetry type (Trace, Exception, Event, Request)
 // - type: More specific type information depending on the source
@@ -65,13 +73,6 @@ union (
 // - severityLevel: Severity level of the telemetry item
 // - operation_Name: Name of the operation
 // - operation_Id: Operation ID (will match the input parameter)
-//
-// Interpretation:
-// This query provides a comprehensive timeline of all telemetry for a specific operation ID,
-// allowing for detailed troubleshooting of issues. By combining traces, exceptions, events,
-// and requests in chronological order, you get the complete picture of what happened during
-// the operation execution, making it easier to identify root causes of failures or performance
-// issues.
 //
 // Usage Tips:
 // 1. Start with a specific operation ID from failure alerts or from the failed-work-items queries

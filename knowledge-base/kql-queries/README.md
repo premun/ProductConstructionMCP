@@ -38,9 +38,6 @@ Each query file follows a standardized format:
 // Expected Output:
 // - [field1]: [description]
 // - [field2]: [description]
-
-// Interpretation:
-// [How to interpret the results]
 ```
 
 ## Contributing

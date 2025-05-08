@@ -1,8 +1,14 @@
 // Title: Failed Work Items Exception Analysis
 // Description: Finds exceptions associated with failed work items and groups them by type
 
+// Parameters:
+// - TimeStart: The start of the time range to analyze (e.g., ago(24h))
+
 // Query:
+let timeStart = datetime({{TimeStart}});
+let timeEnd = now();
 let failedWorkItems = customEvents
+| where timestamp between (timeStart .. timeEnd)
 | where name == "WorkItemExecuted"
 | extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
 | where success != true and attempt == 3
@@ -10,6 +16,7 @@ let failedWorkItems = customEvents
 failedWorkItems
 | join kind=inner (
     exceptions
+    | where timestamp between (timeStart .. timeEnd)
 ) on $left.operationId == $right.operation_Id
 | summarize
     Count = count(),
@@ -20,18 +27,20 @@ failedWorkItems
 | render table
 
 // Expected Output:
+// Tabularized data showing exceptions associated with failed work items with the following columns:
 // - Problem: The type of exception that occurred
 // - Count: Number of times this exception type was seen across failed work items
-// - Message: Sample full exception message for this type
-// - Details: Additional details about the exception, if available
-//
-// Results are rendered in table format for improved readability and analysis.
+// - Root cause: The root cause of the exception, if available
+// - Key Location: Link to the source code location of the exception in the dotnet/arcade-services repository
 // The table view makes it easier to compare different exception types and their impact.
 // For best results, consider customizing the table columns in your viewing tool to focus on
 // the most relevant data for your current investigation.
-
-// Interpretation:
-// This query helps identify patterns in exceptions that are causing work items to fail.
-// By grouping exceptions by type, you can quickly identify the most common failure modes
-// and prioritize fixes for the most impactful issues.
-// The problemId can be used to correlate with other Azure monitoring data or ticketing systems.
+// Example table:
+// | Problem | Count | Root Cause | Key Location |
+// |---------|-------|------------|-------------|
+// | NullReferenceException in ProcessCodeFlowUpdateAsync | 9 | Object reference null | [PullRequestUpdater.cs line 997](https://github.com/dotnet/arcade-services/blob/main/src/ProductConstructionService/ProductConstructionService.DependencyFlow/PullRequestUpdater.cs#L997) |
+// | NullReferenceException in ProcessCodeFlowUpdateAsync:614 | 8 | Object reference null | [PullRequestUpdater.cs line 997](https://github.com/dotnet/arcade-services/blob/main/src/ProductConstructionService/ProductConstructionService.DependencyFlow/PullRequestUpdater.cs#L997) |
+// | DependencyFileNotFoundException | 4 | Missing global.json | [GitHubClient.cs line 135](https://github.com/dotnet/arcade-services/blob/main/src/Microsoft.DotNet.Darc/DarcLib/GitHubClient.cs#L135) |
+// | NullReferenceException in ProcessCodeFlowUpdateAsync:490 | 4 | Object reference null | [PullRequestUpdater.cs line 999](https://github.com/dotnet/arcade-services/blob/main/src/ProductConstructionService/ProductConstructionService.DependencyFlow/PullRequestUpdater.cs#L999) |
+// | HttpRequestException in PullRequestBuilder | 2 | 404 Not Found | [PullRequestBuilder.cs line 171](https://github.com/dotnet/arcade-services/blob/main/src/ProductConstructionService/ProductConstructionService.DependencyFlow/PullRequestBuilder.cs#L171) |
+// | DependencyFileNotFoundException:853 | 1 | Missing global.json | [GitHubClient.cs line 135](https://github.com/dotnet/arcade-services/blob/main/src/Microsoft.DotNet.Darc/DarcLib/GitHubClient.cs#L135) |

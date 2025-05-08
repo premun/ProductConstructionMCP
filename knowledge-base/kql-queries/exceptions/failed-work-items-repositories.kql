@@ -1,13 +1,20 @@
 // Title: Failed Work Items Repository Impact Analysis
 // Description: Identifies GitHub repositories affected by failed work items through trace analysis
 
+// Parameters:
+// - TimeStart: The start of the time range to analyze (e.g., ago(24h))
+
 // Query:
+let timeStart = datetime({{TimeStart}});
+let timeEnd = now();
 let failedWorkItems = customEvents
+| where timestamp between (timeStart .. timeEnd)
 | where name == "WorkItemExecuted"
 | extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
 | where success != true and attempt == 3
 | project timestamp, operation = operation_Name, operation_Id = operation_Id;
 let repoTraces = traces
+| where timestamp between (timeStart .. timeEnd)
 | join kind=inner (
     failedWorkItems
 ) on operation_Id
@@ -24,17 +31,9 @@ repoTraces
 | order by FailureCount desc
 
 // Expected Output:
+// Tabularized data showing failed work items with the following columns:
 // - Repository: The GitHub repository identified in the trace (format: owner/repo)
 // - FailureCount: Number of distinct operations failing that impact this repository
 // - LastFailure: Timestamp of the most recent failure affecting this repository
 // - FailedOperations: Set of operation names that are failing for this repository
 // - SampleMessages: Sample trace messages to provide context about the failures
-//
-// Interpretation:
-// This query helps identify which repositories are most affected by service failures.
-// The distinct count of operation IDs shows how many separate incidents are affecting a repository.
-// You can use this information to prioritize fixes based on repository impact and collaborate
-// with repository owners to address issues affecting their workflows.
-//
-// Note: This query now specifically targets repositories owned by microsoft, dotnet, xamarin, or mono
-// which provides more focused results for your monitoring needs.
