@@ -19,15 +19,15 @@ public static class KqlQueryLibraryTools
     public static object ListKqlQueries(KqlQueryLibrary queryLibrary)
     {
         var result = new Dictionary<string, IEnumerable<string>>();
-        
+
         foreach (var category in queryLibrary.GetCategories())
         {
             result[category] = queryLibrary.GetQueriesInCategory(category);
         }
-        
+
         return result;
     }
-    
+
     /// <summary>
     /// Gets metadata about a specific query
     /// </summary>
@@ -39,7 +39,7 @@ public static class KqlQueryLibraryTools
     {
         return queryLibrary.GetQueryMetadata(category, queryName);
     }
-    
+
     /// <summary>
     /// Gets the raw KQL query text from the knowledge base
     /// </summary>
@@ -51,22 +51,24 @@ public static class KqlQueryLibraryTools
     {
         return queryLibrary.GetQueryText(category, queryName);
     }
-    
+
     /// <summary>
     /// Executes a query from the knowledge base
     /// </summary>
     /// <param name="category">The category of the query</param>
     /// <param name="queryName">The name of the query file (including .kql extension)</param>
+    /// <param name="period">Optional. The time period to analyze (e.g., "1d", "7d", "30d"). Default is "1d" (1 day).</param>
     /// <returns>The query results as a JSON string</returns>
     [McpServerTool, Description("Executes a KQL query from the knowledge base against Application Insights")]
     public static async Task<string> ExecuteKnowledgeBaseQuery(
-        KqlQueryLibrary queryLibrary, 
-        string category, 
-        string queryName)
+        KqlQueryLibrary queryLibrary,
+        string category,
+        string queryName,
+        string period = "1d")
     {
-        return await queryLibrary.ExecuteKnowledgeBaseQuery(category, queryName);
+        return await queryLibrary.ExecuteKnowledgeBaseQuery(category, queryName, period);
     }
-    
+
     /// <summary>
     /// Searches for queries containing a specific term
     /// </summary>

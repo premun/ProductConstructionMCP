@@ -108,7 +108,7 @@ public class KqlQueryLibrary
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving metadata for query: {Category}/{QueryName}", 
+            _logger.LogError(ex, "Error retrieving metadata for query: {Category}/{QueryName}",
                 category, queryName);
             return new Dictionary<string, string>();
         }
@@ -165,8 +165,9 @@ public class KqlQueryLibrary
     /// </summary>
     /// <param name="category">The category of the query</param>
     /// <param name="queryName">The filename of the query</param>
+    /// <param name="period">The time period to analyze, e.g. "1d" for 1 day (default)</param>
     /// <returns>The result of the query execution as JSON</returns>
-    public async Task<string> ExecuteKnowledgeBaseQuery(string category, string queryName)
+    public async Task<string> ExecuteKnowledgeBaseQuery(string category, string queryName, string period = "1d")
     {
         try
         {
@@ -176,14 +177,17 @@ public class KqlQueryLibrary
                 return $"{{\"error\": \"Query not found or empty: {category}/{queryName}\"}}";
             }
 
-            _logger.LogInformation("Executing knowledge base query: {Category}/{QueryName}", 
-                category, queryName);
-            
+            _logger.LogInformation("Executing knowledge base query: {Category}/{QueryName} with period {Period}",
+                category, queryName, period);
+
+            // Replace the TimeStart parameter with the provided period or default
+            queryText = queryText.Replace("{{TimeStart}}", $"ago({period})");
+
             return await _appInsightsHandler.ExecuteQuery(queryText);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing knowledge base query: {Category}/{QueryName}", 
+            _logger.LogError(ex, "Error executing knowledge base query: {Category}/{QueryName}",
                 category, queryName);
             return $"{{\"error\": \"{ex.Message}\"}}";
         }
@@ -199,12 +203,12 @@ public class KqlQueryLibrary
         try
         {
             var results = new List<string>();
-            
+
             foreach (var category in GetCategories())
             {
                 var categoryPath = Path.Combine(_kqlBasePath, category);
                 var queryFiles = Directory.GetFiles(categoryPath, "*.kql");
-                
+
                 foreach (var file in queryFiles)
                 {
                     var content = File.ReadAllText(file);
@@ -214,7 +218,7 @@ public class KqlQueryLibrary
                     }
                 }
             }
-            
+
             return results;
         }
         catch (Exception ex)
