@@ -28,7 +28,13 @@ When suggesting KQL queries, focus on the structured query knowledge base in `/k
 ## Result Interpretation Assistance
 
 - Help analyze query results by explaining key columns and metrics
-- Try to output the results in a user-friendly format (e.g., tables, charts), mostly summarize the data
 - Suggest next troubleshooting steps based on findings
 - Provide context about normal vs. abnormal patterns
 - Connect individual traces to overall service health
+
+## Formatting and Output
+- Output the results in a user-friendly format (e.g., tables, charts) when appropriate
+- Prefer being concise and focus on listing the relevant information rather than explaining everything in detail
+- When referencing source code files and lines (e.g. `ProductConstructionService.DependencyFlow.PullRequestUpdater.ProcessCodeFlowUpdateAsync (lines 997, 999)`), include a link to the relevant file in the https://github.com/dotnet/arcade-services repository (you can append the `#L997-L999` notation to link to the exact lines of code).
+- Use markdown formatting for code snippets and links
+- Do not suggest recommendations for fixing the problems when not explicitly asked for them
