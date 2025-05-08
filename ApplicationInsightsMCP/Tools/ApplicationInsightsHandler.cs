@@ -11,7 +11,7 @@ using Azure.Monitor.Query.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ApplicationInsightsMCP;
+namespace ApplicationInsightsMCP.Tools;
 
 public class ApplicationInsightsHandler(
     IOptions<AppConfiguration> options,
@@ -97,7 +97,7 @@ public class ApplicationInsightsHandler(
             var resultData = queryResult.Table.Rows.Select(row =>
             {
                 var rowDict = new Dictionary<string, object?>();
-                for (int i = 0; i < queryResult.Table.Columns.Count; i++)
+                for (var i = 0; i < queryResult.Table.Columns.Count; i++)
                 {
                     var column = queryResult.Table.Columns[i];
 

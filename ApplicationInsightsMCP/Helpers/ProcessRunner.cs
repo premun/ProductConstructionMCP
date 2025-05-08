@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApplicationInsightsMCP;
+namespace ApplicationInsightsMCP.Helpers;
 
 /// <summary>
 /// Helper methods for common functionality used across the application
