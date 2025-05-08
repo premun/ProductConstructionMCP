@@ -13,7 +13,7 @@ public class AppConfiguration
     [JsonPropertyName("applicationInsights")]
     public ApplicationInsightsConfig ApplicationInsights { get; set; } = new();
 
-    public string RepositoryRoot { get; set; } = string.Empty;
+    public string RepositoryRoot { get; set; } = null!;
 }
 
 /// <summary>

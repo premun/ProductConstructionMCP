@@ -25,7 +25,7 @@ builder.Services.AddTransient<KqlQueryLibrary>();
 
 builder.Services.PostConfigure<AppConfiguration>(config =>
 {
-    config.RepositoryRoot = Helpers.FindRepositoryRoot();
+    config.RepositoryRoot ??= Helpers.FindRepositoryRoot();
 });
 
 builder.Services

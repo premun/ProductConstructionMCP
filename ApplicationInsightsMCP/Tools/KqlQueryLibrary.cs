@@ -64,12 +64,12 @@ public class KqlQueryLibrary
             }
 
             return Directory.GetFiles(categoryPath, "*.kql")
-                .Select(path => new FileInfo(path).Name);
+                .Select(path => new FileInfo(path).Name.Replace(".kql", null));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving queries for category: {Category}", category);
-            return Enumerable.Empty<string>();
+            return [];
         }
     }
 
@@ -125,7 +125,7 @@ public class KqlQueryLibrary
     {
         try
         {
-            var queryPath = Path.Combine(_kqlBasePath, category, queryName);
+            var queryPath = Path.Combine(_kqlBasePath, category, queryName + ".kql");
             if (!File.Exists(queryPath))
             {
                 _logger.LogWarning("Query file not found: {QueryPath}", queryPath);
@@ -206,7 +206,7 @@ public class KqlQueryLibrary
                     var content = File.ReadAllText(file);
                     if (content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                     {
-                        results.Add($"{category}/{new FileInfo(file).Name}");
+                        results.Add($"{category}/{new FileInfo(file).Name.Replace(".kql", null)}");
                     }
                 }
             }

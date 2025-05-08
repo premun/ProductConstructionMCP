@@ -7,6 +7,13 @@ internal static class Helpers
 {
     public static string FindRepositoryRoot()
     {
+        // Check if REPOSITORY_ROOT environment variable is set
+        string? envRepoRoot = Environment.GetEnvironmentVariable("REPOSITORY_ROOT");
+        if (!string.IsNullOrEmpty(envRepoRoot) && Directory.Exists(envRepoRoot))
+        {
+            return envRepoRoot;
+        }
+        
         // Start with the current directory
         var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
         
@@ -22,6 +29,6 @@ internal static class Helpers
             currentDir = currentDir.Parent;
         }
 
-        throw new InvalidOperationException("No repository root found. Ensure you are in a git repository.");
+        throw new InvalidOperationException($"No git repository root found for '{Directory.GetCurrentDirectory()}'. Ensure you are in a git repository.");
     }
 }
