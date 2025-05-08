@@ -21,26 +21,26 @@ failedWorkItems
     exceptions
 ) on $left.operationId == $right.operation_Id
 | summarize 
-    exceptionCount = count(),
-    failedOperations = make_set(operation, 100),
-    lastSeen = max(timestamp),
-    exampleMessage = take_any(details),
-    exampleInnerMessage = take_any(innermostMessage),
-    operations = make_set(operationId, 100)
-    by problemType = type
-| order by exceptionCount desc
+    Count = count(),
+    Message = take_any(innermostMessage),
+    Details = take_any(details)
+    by Problem = problemId
+| order by Count desc
+| render table
 
 // Expected Output:
-// - problemType: The type of exception that occurred
-// - exceptionCount: Number of times this exception type was seen across failed work items
-// - failedOperations: Set of operations that experienced this exception type
-// - lastSeen: When this exception was last seen
-// - exampleMessage: Sample full exception message for this type
-// - exampleInnerMessage: Sample innermost exception message
-// - operations: Set of operation IDs that can be used for further investigation
+// - Problem: The type of exception that occurred
+// - Count: Number of times this exception type was seen across failed work items
+// - Message: Sample full exception message for this type
+// - Details: Additional details about the exception, if available
+//
+// Results are rendered in table format for improved readability and analysis.
+// The table view makes it easier to compare different exception types and their impact.
+// For best results, consider customizing the table columns in your viewing tool to focus on 
+// the most relevant data for your current investigation.
 
 // Interpretation:
 // This query helps identify patterns in exceptions that are causing work items to fail.
 // By grouping exceptions by type, you can quickly identify the most common failure modes
 // and prioritize fixes for the most impactful issues.
-// The operation IDs can be used for deeper investigation into specific failures.
+// The problemId can be used to correlate with other Azure monitoring data or ticketing systems.

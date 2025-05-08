@@ -123,6 +123,11 @@ public class KqlQueryLibrary
     /// <returns>The KQL query text</returns>
     public string GetQueryText(string category, string queryName)
     {
+        if (queryName.EndsWith(".kql", StringComparison.OrdinalIgnoreCase))
+        {
+            queryName = queryName.Substring(0, queryName.Length - 4);
+        }
+
         try
         {
             var queryPath = Path.Combine(_kqlBasePath, category, queryName + ".kql");
@@ -133,10 +138,10 @@ public class KqlQueryLibrary
             }
 
             var content = File.ReadAllText(queryPath);
-            
+
             // Extract the actual query (between "// Query:" and the next comment block)
             var match = Regex.Match(content, @"\/\/\s*Query:\s*\n([\s\S]*?)(?:\/\/|$)");
-            
+
             if (match.Success)
             {
                 return match.Groups[1].Value.Trim();
@@ -150,7 +155,7 @@ public class KqlQueryLibrary
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving query text for {Category}/{QueryName}", 
+            _logger.LogError(ex, "Error retrieving query text for {Category}/{QueryName}",
                 category, queryName);
             return string.Empty;
         }
