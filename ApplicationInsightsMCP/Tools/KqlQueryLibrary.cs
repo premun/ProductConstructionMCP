@@ -26,7 +26,6 @@ public class KqlQueryLibrary
         _appInsightsHandler = appInsightsHandler;
         _logger = logger;
         _kqlBasePath = Path.Combine(config.Value.RepositoryRoot, "knowledge-base", "kql-queries");
-        _logger.LogInformation("KQL Base Path: {KqlBasePath}", _kqlBasePath);
     }
 
     /// <summary>
