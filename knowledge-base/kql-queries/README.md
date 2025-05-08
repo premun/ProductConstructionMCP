@@ -24,11 +24,9 @@ The queries are organized into the following categories:
 
 Each query file follows a standardized format:
 
-```
+```kql
 // Title: [Short descriptive title]
 // Description: [What the query analyzes]
-// Use Case: [When and how to use this query]
-// Last Updated: [Date]
 
 // Parameters:
 // - [Parameter1]: [Description]
@@ -44,19 +42,6 @@ Each query file follows a standardized format:
 // Interpretation:
 // [How to interpret the results]
 ```
-
-## Using These Queries
-
-These queries can be executed directly through the ApplicationInsightsMCP tool using:
-
-```csharp
-await ExecuteQuery("[paste query here]");
-```
-
-## Important Queries
-
-### Critical Service Monitoring
-- [Failed Background Work Items](./exceptions/failed-work-items.kql): Detects background work items that have failed after all retry attempts
 
 ## Contributing
 

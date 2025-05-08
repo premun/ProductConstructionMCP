@@ -1,11 +1,5 @@
 // Title: Failed Background Work Items Detection
 // Description: Identifies background work items that have failed after all retry attempts
-// Use Case: Critical monitoring of background processing failures in the service
-// Last Updated: 2025-05-08
-
-// Parameters:
-// - Attempt: Set to 3 to capture only items that have exhausted all retry attempts
-// - TimeRange: Adjust as needed in your query window (default is last 24h)
 
 // Query:
 customEvents

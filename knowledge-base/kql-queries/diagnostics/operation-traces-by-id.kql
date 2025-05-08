@@ -1,61 +1,58 @@
 // filepath: d:\repos\agent\knowledge-base\kql-queries\diagnostics\operation-traces-by-id.kql
 // Title: Operation Traces Lookup by ID
 // Description: Retrieves all traces and events associated with a specific operation ID for diagnostics
-// Use Case: Detailed debugging and troubleshooting of specific operations
-// Last Updated: 2025-05-08
 
 // Parameters:
 // - OperationId: The specific operation ID to investigate
-// - TimeRange: Time range to search for traces, typically 24-48 hours
 
 // Query:
-let operationId = "{{OperationId}}"; // Replace with actual operation ID or parameterize
+let operationId = "{{OperationId}}";
 union (
     traces
     | where operation_Id == operationId
-    | project 
-        timestamp, 
-        source = "Trace", 
-        type = "Trace", 
-        message, 
-        severityLevel, 
-        operation_Name, 
+    | project
+        timestamp,
+        source = "Trace",
+        type = "Trace",
+        message,
+        severityLevel,
+        operation_Name,
         operation_Id
 ),
 (
     exceptions
     | where operation_Id == operationId
-    | project 
-        timestamp, 
-        source = "Exception", 
-        type = strcat(itemType, ": ", outerType), 
-        message = strcat(outerMessage, " | Stack: ", outerStack), 
-        severityLevel, 
-        operation_Name, 
+    | project
+        timestamp,
+        source = "Exception",
+        type = strcat(itemType, ": ", outerType),
+        message = strcat(outerMessage, " | Stack: ", outerStack),
+        severityLevel,
+        operation_Name,
         operation_Id
 ),
 (
     customEvents
     | where operation_Id == operationId
-    | project 
-        timestamp, 
-        source = "Event", 
-        type = name, 
-        message = tostring(customDimensions), 
-        severityLevel, 
-        operation_Name, 
+    | project
+        timestamp,
+        source = "Event",
+        type = name,
+        message = tostring(customDimensions),
+        severityLevel,
+        operation_Name,
         operation_Id
 ),
 (
     requests
     | where operation_Id == operationId
-    | project 
-        timestamp, 
-        source = "Request", 
-        type = strcat(itemType, ": ", name), 
-        message = strcat("URL: ", url, " | Result: ", resultCode, " | Duration: ", duration, "ms"), 
-        severityLevel, 
-        operation_Name, 
+    | project
+        timestamp,
+        source = "Request",
+        type = strcat(itemType, ": ", name),
+        message = strcat("URL: ", url, " | Result: ", resultCode, " | Duration: ", duration, "ms"),
+        severityLevel,
+        operation_Name,
         operation_Id
 )
 | order by timestamp asc

@@ -1,25 +1,17 @@
 // Title: Failed Work Items Exception Analysis
 // Description: Finds exceptions associated with failed work items and groups them by type
-// Use Case: Root cause analysis of failing background work items
-// Last Updated: 2025-05-08
-
-// Parameters:
-// - TimeRange: Time range for exception search, should match the failed work items query window
 
 // Query:
-// First, get all failed work items
 let failedWorkItems = customEvents
 | where name == "WorkItemExecuted"
 | extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
 | where success != true and attempt == 3
 | project timestamp, operation = operation_Name, operationId = operation_Id;
-
-// Then join with all exceptions by operation_Id
 failedWorkItems
 | join kind=inner (
     exceptions
 ) on $left.operationId == $right.operation_Id
-| summarize 
+| summarize
     Count = count(),
     Message = take_any(innermostMessage),
     Details = take_any(details)
@@ -35,7 +27,7 @@ failedWorkItems
 //
 // Results are rendered in table format for improved readability and analysis.
 // The table view makes it easier to compare different exception types and their impact.
-// For best results, consider customizing the table columns in your viewing tool to focus on 
+// For best results, consider customizing the table columns in your viewing tool to focus on
 // the most relevant data for your current investigation.
 
 // Interpretation:
