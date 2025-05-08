@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -17,6 +16,7 @@ builder.Services.AddTransient<ProcessRunner>();
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithPromptsFromAssembly();
 
 await builder.Build().RunAsync();

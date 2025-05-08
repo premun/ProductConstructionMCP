@@ -2,7 +2,7 @@ using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace ApplicationInsightsMCP;
+namespace ApplicationInsightsMCP.Tools;
 
 /// <summary>
 /// MCP tool for executing Application Insights queries using local Azure CLI credentials
