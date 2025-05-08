@@ -1,0 +1,46 @@
+// filepath: d:\repos\agent\knowledge-base\kql-queries\exceptions\failed-work-items-exceptions.kql
+// Title: Failed Work Items Exception Analysis
+// Description: Finds exceptions associated with failed work items and groups them by type
+// Use Case: Root cause analysis of failing background work items
+// Last Updated: 2025-05-08
+
+// Parameters:
+// - TimeRange: Time range for exception search, should match the failed work items query window
+
+// Query:
+// First, get all failed work items
+let failedWorkItems = customEvents
+| where name == "WorkItemExecuted"
+| extend attempt = toint(customDimensions["Attempt"]), success = tobool(customDimensions["Success"])
+| where success != true and attempt == 3
+| project timestamp, operation = operation_Name, operationId = operation_Id;
+
+// Then join with all exceptions by operation_Id
+failedWorkItems
+| join kind=inner (
+    exceptions
+) on $left.operationId == $right.operation_Id
+| summarize 
+    exceptionCount = count(),
+    failedOperations = make_set(operation, 100),
+    lastSeen = max(timestamp),
+    exampleMessage = take_any(details),
+    exampleInnerMessage = take_any(innermostMessage),
+    operations = make_set(operationId, 100)
+    by problemType = type
+| order by exceptionCount desc
+
+// Expected Output:
+// - problemType: The type of exception that occurred
+// - exceptionCount: Number of times this exception type was seen across failed work items
+// - failedOperations: Set of operations that experienced this exception type
+// - lastSeen: When this exception was last seen
+// - exampleMessage: Sample full exception message for this type
+// - exampleInnerMessage: Sample innermost exception message
+// - operations: Set of operation IDs that can be used for further investigation
+
+// Interpretation:
+// This query helps identify patterns in exceptions that are causing work items to fail.
+// By grouping exceptions by type, you can quickly identify the most common failure modes
+// and prioritize fixes for the most impactful issues.
+// The operation IDs can be used for deeper investigation into specific failures.
