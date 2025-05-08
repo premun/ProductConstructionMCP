@@ -33,7 +33,7 @@ public class ProcessRunner(ILogger<ProcessRunner> logger)
             CreateNoWindow = true
         };
 
-        _logger.LogTrace("Process start info configured with UseShellExecute={UseShellExecute}, CreateNoWindow={CreateNoWindow}", 
+        _logger.LogTrace("Process start info configured with UseShellExecute={UseShellExecute}, CreateNoWindow={CreateNoWindow}",
             processStartInfo.UseShellExecute, processStartInfo.CreateNoWindow);
 
         var process = new Process { StartInfo = processStartInfo };
@@ -63,7 +63,7 @@ public class ProcessRunner(ILogger<ProcessRunner> logger)
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            
+
             _logger.LogDebug("Waiting for process to exit");
             await process.WaitForExitAsync();
 
@@ -71,13 +71,10 @@ public class ProcessRunner(ILogger<ProcessRunner> logger)
 
             if (process.ExitCode != 0)
             {
-                var errorMsg = $"Command failed with exit code {process.ExitCode}: {error}";
-                _logger.LogError(errorMsg);
-                throw new InvalidOperationException(errorMsg);
+                throw new InvalidOperationException($"Command failed with exit code {process.ExitCode}: {error}");
             }
 
             var result = output.ToString().Trim();
-            _logger.LogDebug("Command completed successfully, output length: {OutputLength} characters", result.Length);
             return result;
         }
         catch (Exception ex) when (ex is not InvalidOperationException)

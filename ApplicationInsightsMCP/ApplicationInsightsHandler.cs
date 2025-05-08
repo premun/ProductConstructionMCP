@@ -88,12 +88,14 @@ public class ApplicationInsightsHandler(
         var appInsights = _options.Value.ApplicationInsights;
         return new ResourceIdentifier($"/subscriptions/{appInsights.SubscriptionId}/resourceGroups/{appInsights.ResourceGroup}/providers/Microsoft.Insights/components/{appInsights.ApplicationName}");
     }
+
     private string ConvertQueryResultToJson(LogsQueryResult queryResult)
     {
         try
         {
             // Extract the table data and convert to JSON
-            var resultData = queryResult.Table.Rows.Select(row => {
+            var resultData = queryResult.Table.Rows.Select(row =>
+            {
                 var rowDict = new Dictionary<string, object?>();
                 for (int i = 0; i < queryResult.Table.Columns.Count; i++)
                 {
@@ -127,13 +129,14 @@ public class ApplicationInsightsHandler(
                     }
                     else if (column.Type == LogsColumnType.Dynamic)
                     {
-                        try {
+                        try
+                        {
                             value = JsonSerializer.Deserialize<object>(row.GetString(i));
                         }
                         catch
                         {
                             value = row.GetString(i); // Fallback to string if JSON parsing fails
-                            _logger.LogError("Failed to parse JSON for column {ColumnName}: {value}", column.Name, value);
+                            _logger.LogDebug("Failed to parse JSON for column {ColumnName}: {value}", column.Name, value);
                         }
                     }
                     else

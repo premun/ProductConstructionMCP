@@ -7,7 +7,7 @@
             "args": [
                 "run",
                 "--project",
-                "D:\\repos\\agent\\ApplicationInsightsMCP\\ApplicationInsightsMCP.csproj"
+                "${workspaceFolder}\\ApplicationInsightsMCP\\ApplicationInsightsMCP.csproj"
             ],
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
