@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ApplicationInsightsMCP;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ProductConstructionMCP;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging

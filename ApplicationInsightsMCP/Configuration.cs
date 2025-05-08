@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ProductConstructionMCP;
+namespace ApplicationInsightsMCP;
 
 /// <summary>
 /// Root configuration class for the ProductConstructionMCP application

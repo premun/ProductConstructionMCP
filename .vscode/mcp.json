@@ -1,13 +1,13 @@
 {
     "inputs": [],
     "servers": {
-        "ProductConstruction MCP": {
+        "ApplicationInsights MCP": {
             "type": "stdio",
             "command": "dotnet",
             "args": [
                 "run",
                 "--project",
-                "D:\\repos\\agent\\ProductConstructionMCP\\ProductConstructionMCP.csproj"
+                "D:\\repos\\agent\\ApplicationInsightsMCP\\ApplicationInsightsMCP.csproj"
             ],
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
