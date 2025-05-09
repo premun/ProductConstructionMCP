@@ -14,11 +14,13 @@ These queries serve as building blocks for AI agents and human operators to:
 
 The queries are organized into the following categories:
 
-- **availability**: Queries related to service availability and uptime
-- **dependencies**: Queries for analyzing external service dependencies
+- **diagnostics**: Queries for operation tracing and detailed debugging
 - **exceptions**: Queries for error detection and analysis
-- **performance**: Queries related to application performance metrics
 - **usage**: Queries about user behavior and feature usage
+
+## Common Workflows
+
+- **Subscription Activity Analysis**: Use `diagnostics/subscription-activity.kql` to analyze all activities related to a specific subscription ID, including associated exceptions and operational status
 
 ## Query File Format
 

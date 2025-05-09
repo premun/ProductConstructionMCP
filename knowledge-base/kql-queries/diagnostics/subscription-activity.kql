@@ -1,0 +1,108 @@
+// Title: Subscription Activity Analysis
+// Description: Analyzes all activity related to a specific subscription ID, including traces and any associated exceptions
+
+// Parameters:
+// - SubscriptionId: The specific subscription ID (GUID) to investigate
+// - TimeStart: The start of the time range to analyze (default: ago(1d))
+
+// Query:
+let subscriptionId = "{{SubscriptionId}}";
+let timeStart = datetime({{TimeStart}});
+let timeEnd = now();
+
+// Step 1: Get all traces related to the subscription
+let subscriptionTraces =
+    traces
+    | where timestamp between (timeStart .. timeEnd)
+    | where message has subscriptionId
+    | project
+        timestamp,
+        operation_Id,
+        operation_Name,
+        message,
+        severityLevel,
+        cloud_RoleInstance;
+
+// Step 2: Get distinct operation IDs from traces related to the subscription
+let operationIds =
+    subscriptionTraces
+    | distinct operation_Id;
+
+// Step 3: Check for exceptions related to these operations
+let operationExceptions =
+    exceptions
+    | where timestamp between (timeStart .. timeEnd)
+    | where operation_Id in (operationIds)
+    | project
+        timestamp,
+        operation_Id,
+        operation_Name,
+        problemId,
+        type,
+        method,
+        outerMessage,
+        details;
+
+// Step 4: Provide a summary of activity with combined results
+let activityTimeline =
+    subscriptionTraces
+    | project
+        timestamp,
+        operation_Id,
+        operation_Name,
+        message,
+        type = "Trace"
+    | union (
+        operationExceptions
+        | project
+            timestamp,
+            operation_Id,
+            operation_Name,
+            message = outerMessage,
+            type = "Exception"
+    )
+    | order by timestamp asc;
+
+// Step 5: Create operation status summary
+let operationSummary =
+    subscriptionTraces
+    | summarize
+        firstActivity = min(timestamp),
+        lastActivity = max(timestamp),
+        messageCount = count()
+        by operation_Id, operation_Name
+    | join kind=leftouter (
+        operationExceptions
+        | summarize exceptionCount = count() by operation_Id
+    ) on operation_Id
+    | project
+        operation_Id,
+        operation_Name,
+        firstActivity,
+        lastActivity,
+        messageCount,
+        exceptionCount = iif(isempty(exceptionCount), 0, exceptionCount),
+        status = iif(isempty(exceptionCount) or exceptionCount == 0, "Success", "Failed");
+
+// Return both the activity timeline and operation summary
+activityTimeline
+
+// Expected Output:
+// Tabularized data showing subscription activity with the following columns:
+// - timestamp: When the activity was logged
+// - operation_Id: Unique identifier for the operation
+// - operation_Name: Name of the operation
+// - message: Details about the activity
+// - type: Whether the entry is a Trace or Exception
+
+// To see the operation summary instead, use this query:
+// operationSummary
+//
+// This will show:
+// - operation_Id: Unique identifier for the operation
+// - operation_Name: Name of the operation
+// - firstActivity: When the operation first appeared in logs
+// - lastActivity: When the operation last appeared in logs
+// - messageCount: Number of trace messages for this operation
+// - exceptionCount: Number of exceptions for this operation
+// - status: Success or Failed based on exceptions
