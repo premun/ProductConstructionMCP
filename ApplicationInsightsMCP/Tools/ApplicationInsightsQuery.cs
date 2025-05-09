@@ -8,7 +8,7 @@ namespace ApplicationInsightsMCP.Tools;
 /// MCP tool for executing Application Insights queries using local Azure CLI credentials
 /// </summary>
 [McpServerToolType]
-public static class ApplicationInsightsQuery
+public static class ApplicationInsightsTools
 {
     /// <summary>
     /// Executes a Kusto KQL query against an Application Insights instance
@@ -16,7 +16,7 @@ public static class ApplicationInsightsQuery
     /// <param name="query">The Kusto KQL query to execute</param>
     /// <returns>The query results as a JSON string</returns>
     [McpServerTool, Description("Executes a Kusto KQL query against the configured Application Insights instance")]
-    public static async Task<string> ExecuteQuery(ApplicationInsightsHandler appInsightsHandler, string query)
+    public static async Task<string> ExecuteApplicationInsightsQuery(ApplicationInsightsHandler appInsightsHandler, string query)
     {
         return await appInsightsHandler.ExecuteQuery(query);
     }

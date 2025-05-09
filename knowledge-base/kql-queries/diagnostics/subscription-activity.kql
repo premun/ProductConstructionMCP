@@ -7,10 +7,8 @@
 
 // Query:
 let subscriptionId = "{{SubscriptionId}}";
-let timeStart = datetime({{TimeStart}});
+let timeStart = {{TimeStart}};
 let timeEnd = now();
-
-// Step 1: Get all traces related to the subscription
 let subscriptionTraces =
     traces
     | where timestamp between (timeStart .. timeEnd)
@@ -22,13 +20,9 @@ let subscriptionTraces =
         message,
         severityLevel,
         cloud_RoleInstance;
-
-// Step 2: Get distinct operation IDs from traces related to the subscription
 let operationIds =
     subscriptionTraces
     | distinct operation_Id;
-
-// Step 3: Check for exceptions related to these operations
 let operationExceptions =
     exceptions
     | where timestamp between (timeStart .. timeEnd)
@@ -42,8 +36,6 @@ let operationExceptions =
         method,
         outerMessage,
         details;
-
-// Step 4: Provide a summary of activity with combined results
 let activityTimeline =
     subscriptionTraces
     | project
@@ -62,8 +54,6 @@ let activityTimeline =
             type = "Exception"
     )
     | order by timestamp asc;
-
-// Step 5: Create operation status summary
 let operationSummary =
     subscriptionTraces
     | summarize
@@ -83,8 +73,6 @@ let operationSummary =
         messageCount,
         exceptionCount = iif(isempty(exceptionCount), 0, exceptionCount),
         status = iif(isempty(exceptionCount) or exceptionCount == 0, "Success", "Failed");
-
-// Return both the activity timeline and operation summary
 activityTimeline
 
 // Expected Output:

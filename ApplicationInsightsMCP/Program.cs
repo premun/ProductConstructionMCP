@@ -1,6 +1,5 @@
 ﻿using ApplicationInsightsMCP;
 using ApplicationInsightsMCP.Helpers;
-using ApplicationInsightsMCP.Tools;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

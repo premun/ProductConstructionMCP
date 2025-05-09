@@ -29,18 +29,6 @@ public static class KqlQueryLibraryTools
     }
 
     /// <summary>
-    /// Gets metadata about a specific query
-    /// </summary>
-    /// <param name="category">The category of the query</param>
-    /// <param name="queryName">The name of the query file (including .kql extension)</param>
-    /// <returns>Metadata about the query</returns>
-    [McpServerTool, Description("Gets metadata about a specific KQL query")]
-    public static object GetQueryMetadata(KqlQueryLibrary queryLibrary, string category, string queryName)
-    {
-        return queryLibrary.GetQueryMetadata(category, queryName);
-    }
-
-    /// <summary>
     /// Gets the raw KQL query text from the knowledge base
     /// </summary>
     /// <param name="category">The category of the query</param>
@@ -57,16 +45,16 @@ public static class KqlQueryLibraryTools
     /// </summary>
     /// <param name="category">The category of the query</param>
     /// <param name="queryName">The name of the query file (including .kql extension)</param>
-    /// <param name="period">Optional. The time period to analyze (e.g., "1d", "7d", "30d"). Default is "1d" (1 day).</param>
+    /// <param name="parameters">Optional. Dictionary of parameter names and values to replace in the query</param>
     /// <returns>The query results as a JSON string</returns>
     [McpServerTool, Description("Executes a KQL query from the knowledge base against Application Insights")]
     public static async Task<string> ExecuteKnowledgeBaseQuery(
         KqlQueryLibrary queryLibrary,
         string category,
         string queryName,
-        string period = "1d")
+        Dictionary<string, string>? parameters = null)
     {
-        return await queryLibrary.ExecuteKnowledgeBaseQuery(category, queryName, period);
+        return await queryLibrary.ExecuteKnowledgeBaseQuery(category, queryName, parameters);
     }
 
     /// <summary>
@@ -78,5 +66,17 @@ public static class KqlQueryLibraryTools
     public static IEnumerable<string> SearchQueries(KqlQueryLibrary queryLibrary, string searchTerm)
     {
         return queryLibrary.SearchQueries(searchTerm);
+    }
+
+    /// <summary>
+    /// Gets the available parameters for a specific query
+    /// </summary>
+    /// <param name="category">The category of the query</param>
+    /// <param name="queryName">The name of the query file (including .kql extension)</param>
+    /// <returns>Dictionary of parameter names and their descriptions</returns>
+    [McpServerTool, Description("Gets the available parameters for a specific KQL query")]
+    public static Dictionary<string, string> GetQueryParameters(KqlQueryLibrary queryLibrary, string category, string queryName)
+    {
+        return queryLibrary.ExtractQueryParameters(category, queryName);
     }
 }

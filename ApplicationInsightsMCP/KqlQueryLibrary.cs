@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ApplicationInsightsMCP.Tools;
+namespace ApplicationInsightsMCP;
 
 /// <summary>
 /// Provides functionality to manage and execute KQL queries from the knowledge base
@@ -73,48 +73,6 @@ public class KqlQueryLibrary
     }
 
     /// <summary>
-    /// Get metadata about a specific query
-    /// </summary>
-    /// <param name="category">The category of the query</param>
-    /// <param name="queryName">The filename of the query</param>
-    /// <returns>Dictionary containing query metadata</returns>
-    public Dictionary<string, string> GetQueryMetadata(string category, string queryName)
-    {
-        try
-        {
-            var queryPath = Path.Combine(_kqlBasePath, category, queryName);
-            if (!File.Exists(queryPath))
-            {
-                _logger.LogWarning("Query file not found: {QueryPath}", queryPath);
-                return new Dictionary<string, string>();
-            }
-
-            var content = File.ReadAllText(queryPath);
-            var metadata = new Dictionary<string, string>();
-
-            // Extract title
-            var titleMatch = Regex.Match(content, @"\/\/\s*Title:\s*(.+)");
-            if (titleMatch.Success) metadata["Title"] = titleMatch.Groups[1].Value.Trim();
-
-            // Extract description
-            var descMatch = Regex.Match(content, @"\/\/\s*Description:\s*(.+)");
-            if (descMatch.Success) metadata["Description"] = descMatch.Groups[1].Value.Trim();
-
-            // Extract use case
-            var useMatch = Regex.Match(content, @"\/\/\s*Use Case:\s*(.+)");
-            if (useMatch.Success) metadata["UseCase"] = useMatch.Groups[1].Value.Trim();
-
-            return metadata;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving metadata for query: {Category}/{QueryName}",
-                category, queryName);
-            return new Dictionary<string, string>();
-        }
-    }
-
-    /// <summary>
     /// Gets the raw KQL query text from a file
     /// </summary>
     /// <param name="category">The category of the query</param>
@@ -159,15 +117,15 @@ public class KqlQueryLibrary
             return string.Empty;
         }
     }
-
+    
     /// <summary>
     /// Executes a query from the knowledge base
     /// </summary>
     /// <param name="category">The category of the query</param>
     /// <param name="queryName">The filename of the query</param>
-    /// <param name="period">The time period to analyze, e.g. "1d" for 1 day (default)</param>
+    /// <param name="parameters">Dictionary of parameter names and values to replace in the query</param>
     /// <returns>The result of the query execution as JSON</returns>
-    public async Task<string> ExecuteKnowledgeBaseQuery(string category, string queryName, string period = "1d")
+    public async Task<string> ExecuteKnowledgeBaseQuery(string category, string queryName, Dictionary<string, string>? parameters = null)
     {
         try
         {
@@ -177,11 +135,45 @@ public class KqlQueryLibrary
                 return $"{{\"error\": \"Query not found or empty: {category}/{queryName}\"}}";
             }
 
-            _logger.LogInformation("Executing knowledge base query: {Category}/{QueryName} with period {Period}",
-                category, queryName, period);
+            _logger.LogInformation("Executing knowledge base query: {Category}/{QueryName} with {ParameterCount} parameters",
+                category, queryName, parameters?.Count ?? 0);
 
-            // Replace the TimeStart parameter with the provided period or default
-            queryText = queryText.Replace("{{TimeStart}}", $"ago({period})");
+            // Apply parameter substitutions
+            foreach (var param in parameters ?? [])
+            {
+                string placeholder = $"{{{{{param.Key}}}}}";
+                string value = param.Value;
+
+                // Special handling for TimeStart parameter which needs ago() function
+                if (param.Key == "TimeStart" && !value.StartsWith("ago(", StringComparison.OrdinalIgnoreCase))
+                {
+                    value = $"ago({value})";
+                }
+
+                queryText = queryText.Replace(placeholder, value);
+            }
+
+            // Check for missing parameters and provide defaults where possible
+            var missingParameters = new List<string>();
+
+            // Apply default for TimeStart if not provided
+            if (queryText.Contains("{{TimeStart}}"))
+            {
+                queryText = queryText.Replace("{{TimeStart}}", "ago(1d)");
+            }
+
+            // Check for any remaining parameters that are missing
+            var remainingParams = Regex.Matches(queryText, @"\{\{([^}]+)\}\}");
+            foreach (Match match in remainingParams)
+            {
+                missingParameters.Add(match.Groups[1].Value);
+            }
+
+            // If there are missing parameters, throw an exception
+            if (missingParameters.Count > 0)
+            {
+                throw new ArgumentException($"Required parameters missing: {string.Join(", ", missingParameters)}");
+            }
 
             return await _appInsightsHandler.ExecuteQuery(queryText);
         }
@@ -224,6 +216,61 @@ public class KqlQueryLibrary
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching queries for term: {SearchTerm}", searchTerm);
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Extracts parameter names and descriptions from a KQL query file
+    /// </summary>
+    /// <param name="category">The category of the query</param>
+    /// <param name="queryName">The filename of the query</param>
+    /// <returns>Dictionary of parameter names and their descriptions</returns>
+    public Dictionary<string, string> ExtractQueryParameters(string category, string queryName)
+    {
+        try
+        {
+            if (queryName.EndsWith(".kql", StringComparison.OrdinalIgnoreCase))
+            {
+                queryName = queryName.Substring(0, queryName.Length - 4);
+            }
+
+            var queryPath = Path.Combine(_kqlBasePath, category, queryName + ".kql");
+            if (!File.Exists(queryPath))
+            {
+                _logger.LogWarning("Query file not found: {QueryPath}", queryPath);
+                return [];
+            }
+
+            var content = File.ReadAllText(queryPath);
+            var parameters = new Dictionary<string, string>();            // Find the Parameters section - account for possible malformed comments without line breaks
+            var parametersSection = Regex.Match(content, @"\/\/\s*Parameters:([\s\S]*?)(?:\/\/\s*Query:)");
+
+            if (!parametersSection.Success)
+            {
+                throw new ArgumentException($"Parameters section not found in {queryPath}. Please check the file format.");
+            }
+
+            // Extract individual parameter definitions
+            var paramText = parametersSection.Groups[1].Value;
+
+            // Try an even more liberal pattern to match parameters, accounting for the malformed format
+            var paramMatches = Regex.Matches(paramText, @"-\s*([^:]+):\s*([^\/]*)", RegexOptions.Multiline);
+            foreach (Match match in paramMatches)
+            {
+                if (match.Groups.Count >= 3)
+                {
+                    var paramName = match.Groups[1].Value.Trim();
+                    var paramDesc = match.Groups[2].Value.Trim();
+                    parameters[paramName] = paramDesc;
+                }
+            }
+
+            return parameters;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting parameters for query: {Category}/{QueryName}", category, queryName);
             return [];
         }
     }

@@ -11,7 +11,7 @@ using Azure.Monitor.Query.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ApplicationInsightsMCP.Tools;
+namespace ApplicationInsightsMCP;
 
 public class ApplicationInsightsHandler(
     IOptions<AppConfiguration> options,
