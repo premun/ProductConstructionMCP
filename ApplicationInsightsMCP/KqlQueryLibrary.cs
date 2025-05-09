@@ -14,12 +14,12 @@ namespace ApplicationInsightsMCP;
 /// </summary>
 public class KqlQueryLibrary
 {
-    private readonly ApplicationInsightsHandler _appInsightsHandler;
+    private readonly ApplicationInsightsApiHandler _appInsightsHandler;
     private readonly ILogger<KqlQueryLibrary> _logger;
     private readonly string _kqlBasePath;
 
     public KqlQueryLibrary(
-        ApplicationInsightsHandler appInsightsHandler,
+        ApplicationInsightsApiHandler appInsightsHandler,
         IOptions<AppConfiguration> config,
         ILogger<KqlQueryLibrary> logger)
     {

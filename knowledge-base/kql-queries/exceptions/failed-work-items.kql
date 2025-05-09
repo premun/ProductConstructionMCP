@@ -5,7 +5,7 @@
 // - TimeStart: The start of the time range to analyze (e.g., ago(24h))
 
 // Query:
-let timeStart = datetime({{TimeStart}});
+let timeStart = {{TimeStart}};
 let timeEnd = now();
 customEvents
 | where timestamp between (timeStart .. timeEnd)

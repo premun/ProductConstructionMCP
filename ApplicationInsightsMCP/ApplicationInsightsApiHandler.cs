@@ -13,12 +13,12 @@ using Microsoft.Extensions.Options;
 
 namespace ApplicationInsightsMCP;
 
-public class ApplicationInsightsHandler(
+public class ApplicationInsightsApiHandler(
     IOptions<AppConfiguration> options,
-    ILogger<ApplicationInsightsHandler> logger)
+    ILogger<ApplicationInsightsApiHandler> logger)
 {
     private readonly IOptions<AppConfiguration> _options = options;
-    private readonly ILogger<ApplicationInsightsHandler> _logger = logger;
+    private readonly ILogger<ApplicationInsightsApiHandler> _logger = logger;
     private readonly LogsQueryClient _logsQueryClient = new(new DefaultAzureCredential());
 
     /// <summary>
@@ -37,7 +37,7 @@ public class ApplicationInsightsHandler(
                 BuildAppInsightsResourceId(),
                 query,
                 new QueryTimeRange(TimeSpan.FromDays(30)));
-            
+
             // Convert the result to JSON
             var result = ConvertQueryResultToJson(response.Value);
             _logger.LogInformation("Results converted to JSON, received {ResultLength} bytes", result.Length);
@@ -46,7 +46,19 @@ public class ApplicationInsightsHandler(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing query: {ErrorMessage}", ex.Message);
+            _logger.LogError(
+                $$"""
+                Error executing Application Insights query:
+                {{Environment.NewLine}}
+                {query}
+                {{Environment.NewLine}}
+                {{Environment.NewLine}}
+                Error details:
+                {{Environment.NewLine}}
+                {error}
+                """,
+                query,
+                ex.Message);
             return JsonSerializer.Serialize(new
             {
                 error = true,

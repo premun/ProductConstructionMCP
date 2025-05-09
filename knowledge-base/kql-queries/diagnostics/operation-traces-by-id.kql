@@ -8,7 +8,7 @@
 
 // Query:
 let operationId = "{{OperationId}}";
-let timeStart = datetime({{TimeStart}});
+let timeStart = {{TimeStart}};
 let timeEnd = now();
 union (
     traces

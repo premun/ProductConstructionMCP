@@ -16,7 +16,7 @@ public static class ApplicationInsightsTools
     /// <param name="query">The Kusto KQL query to execute</param>
     /// <returns>The query results as a JSON string</returns>
     [McpServerTool, Description("Executes a Kusto KQL query against the configured Application Insights instance")]
-    public static async Task<string> ExecuteApplicationInsightsQuery(ApplicationInsightsHandler appInsightsHandler, string query)
+    public static async Task<string> ExecuteApplicationInsightsQuery(ApplicationInsightsApiHandler appInsightsHandler, string query)
     {
         return await appInsightsHandler.ExecuteQuery(query);
     }
